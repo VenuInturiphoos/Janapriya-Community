@@ -7,8 +7,6 @@ export default function HouseList({ isAdmin }) {
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState(null);
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
-  const [bannerImageUrl, setBannerImageUrl] = useState(null);
-  const [bannerPositionY, setBannerPositionY] = useState(50);
   const [isQRPopupOpen, setIsQRPopupOpen] = useState(false);
   const fileInputRef = useRef(null);
   
@@ -80,13 +78,9 @@ export default function HouseList({ isAdmin }) {
       if (!error && data) {
         const qrSetting = data.find(s => s.id === 'payment_qr');
         const emailSetting = data.find(s => s.id === 'complaint_emails');
-        const bannerSetting = data.find(s => s.id === 'banner_image');
-        const posSetting = data.find(s => s.id === 'banner_position_y');
         
         if (qrSetting) setQrCodeUrl(qrSetting.value);
         if (emailSetting) setComplaintEmails(emailSetting.value);
-        if (bannerSetting) setBannerImageUrl(bannerSetting.value);
-        if (posSetting) setBannerPositionY(parseInt(posSetting.value) || 50);
       }
     } catch (err) {
       console.warn('Could not fetch settings:', err);
@@ -224,37 +218,13 @@ export default function HouseList({ isAdmin }) {
         onChange={handleFileChange}
       />
 
-      {bannerImageUrl && (
-        <div style={{ 
-          width: '100%', 
-          height: '250px', 
-          borderRadius: '16px',
-          marginBottom: '24px',
-          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${bannerImageUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: `center ${bannerPositionY}%`,
-          display: 'flex',
-          alignItems: 'flex-end',
-          padding: '24px',
-          color: 'white',
-          boxShadow: 'var(--shadow-glass)'
-        }}>
-          <div>
-            <h1 style={{ margin: '0 0 8px 0', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>House Directory</h1>
-            <p style={{ margin: 0, opacity: 0.9, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>Welcome to your community dashboard</p>
-          </div>
-        </div>
-      )}
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        {!bannerImageUrl && (
-          <div>
-            <h1 style={{ marginBottom: '8px' }}>House Directory</h1>
-            <p>View all houses and their maintenance status.</p>
-          </div>
-        )}
+        <div>
+          <h1 style={{ marginBottom: '8px' }}>House Directory</h1>
+          <p>View all houses and their maintenance status.</p>
+        </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-end', width: bannerImageUrl ? '100%' : 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <div 
             className="glass" 
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px', cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid var(--danger)', color: 'var(--danger)' }}
