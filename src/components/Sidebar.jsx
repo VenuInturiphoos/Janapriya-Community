@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Settings, UserCircle, LogOut, LogIn } from 'lucide-react';
+import { Home, Settings, Image as ImageIcon } from 'lucide-react';
 
 export default function Sidebar({ isAdmin, setIsAdmin }) {
   return (
@@ -15,6 +15,11 @@ export default function Sidebar({ isAdmin, setIsAdmin }) {
         <NavLink to="/houses" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>
           <Home size={20} />
           <span>Directory</span>
+        </NavLink>
+        
+        <NavLink to="/gallery" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>
+          <ImageIcon size={20} />
+          <span>Community Images</span>
         </NavLink>
         
         {isAdmin && (

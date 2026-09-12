@@ -4,6 +4,7 @@ import { UserCircle, LogOut, LogIn } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HouseList from './components/HouseList';
 import AdminPanel from './components/AdminPanel';
+import CommunityGallery from './components/CommunityGallery';
 import { supabase } from './supabaseClient';
 import './index.css';
 
@@ -94,6 +95,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/houses" />} />
               <Route path="/houses" element={<HouseList isAdmin={isAdmin} />} />
+              <Route path="/gallery" element={<CommunityGallery />} />
               <Route 
                 path="/admin" 
                 element={isAdmin ? <AdminPanel /> : <Navigate to="/houses" />} 

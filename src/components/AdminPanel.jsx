@@ -18,6 +18,10 @@ export default function AdminPanel() {
   const [bannerPosition, setBannerPosition] = useState(50);
   const [complaintEmails, setComplaintEmails] = useState('');
   const [emailStatus, setEmailStatus] = useState('');
+  
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [galleryStatus, setGalleryStatus] = useState('');
+  const galleryInputRef = useRef(null);
 
   useEffect(() => {
     fetchPendingApprovals();
@@ -29,13 +33,16 @@ export default function AdminPanel() {
       const { data, error } = await supabase
         .from('settings')
         .select('id, value')
-        .in('id', ['complaint_emails', 'banner_position_y']);
+        .in('id', ['complaint_emails', 'banner_position_y', 'community_images']);
       
       if (!error && data) {
         const emailSetting = data.find(s => s.id === 'complaint_emails');
         const posSetting = data.find(s => s.id === 'banner_position_y');
+        const gallerySetting = data.find(s => s.id === 'community_images');
+        
         if (emailSetting) setComplaintEmails(emailSetting.value);
         if (posSetting) setBannerPosition(parseInt(posSetting.value) || 50);
+        if (gallerySetting) setGalleryImages(JSON.parse(gallerySetting.value || '[]'));
       }
     } catch (err) {
       console.warn('Could not fetch settings:', err);
@@ -182,6 +189,54 @@ export default function AdminPanel() {
       setEmailStatus('Emails updated successfully!');
     } catch (err) {
       setEmailStatus('Error: ' + err.message);
+    }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setGalleryStatus('Uploading image...');
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `gallery_${Date.now()}_${Math.random()}.${fileExt}`;
+      const filePath = `settings/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('evidences')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('evidences')
+        .getPublicUrl(filePath);
+
+      const newImages = [urlData.publicUrl, ...galleryImages];
+      
+      const { error: dbError } = await supabase
+        .from('settings')
+        .upsert({ id: 'community_images', value: JSON.stringify(newImages) });
+      if (dbError) throw dbError;
+
+      setGalleryImages(newImages);
+      setGalleryStatus('Image added to gallery!');
+    } catch (err) {
+      setGalleryStatus('Error: ' + err.message);
+    } finally {
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteGalleryImage = async (urlToDelete) => {
+    if (!window.confirm('Remove this image from the gallery?')) return;
+    try {
+      const newImages = galleryImages.filter(url => url !== urlToDelete);
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ id: 'community_images', value: JSON.stringify(newImages) });
+      if (error) throw error;
+      setGalleryImages(newImages);
+    } catch (err) {
+      alert('Error deleting image: ' + err.message);
     }
   };
 
@@ -350,6 +405,60 @@ export default function AdminPanel() {
             {bannerStatus && (
               <div style={{ marginTop: '16px', fontSize: '14px', color: bannerStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>
                 {bannerStatus}
+              </div>
+            )}
+          </div>
+          
+          {/* Community Images Gallery Upload */}
+          <div className="glass card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <ImageIcon color="var(--primary)" />
+              <h2 style={{ margin: 0, fontSize: '20px' }}>Community Gallery</h2>
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Upload photos of recent events to share with the community.</p>
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              ref={galleryInputRef}
+              onChange={handleGalleryUpload}
+            />
+            
+            <button 
+              className="btn btn-outline" 
+              style={{ width: '100%', justifyContent: 'center', marginBottom: '16px' }} 
+              onClick={() => galleryInputRef.current.click()}
+            >
+              <Upload size={16} /> Upload New Photo
+            </button>
+            
+            {galleryStatus && (
+              <div style={{ marginTop: '8px', marginBottom: '16px', fontSize: '14px', color: galleryStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>
+                {galleryStatus}
+              </div>
+            )}
+            
+            {galleryImages.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                {galleryImages.map((url, idx) => (
+                  <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
+                    <img src={url} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button 
+                      onClick={() => handleDeleteGalleryImage(url)}
+                      style={{ 
+                        position: 'absolute', top: '4px', right: '4px', 
+                        background: 'rgba(239, 68, 68, 0.9)', color: 'white', 
+                        border: 'none', borderRadius: '50%', width: '24px', height: '24px', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        cursor: 'pointer', fontSize: '12px' 
+                      }}
+                      title="Delete Image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
