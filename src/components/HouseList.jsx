@@ -264,7 +264,24 @@ export default function HouseList({ isAdmin }) {
           return (
             <div key={house.id} className="house-card glass card" style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', minWidth: '250px' }}>
-                <h3 style={{ fontSize: '20px', margin: 0, color: 'var(--primary)', width: '80px' }}>{house.house_number}</h3>
+                <h3 
+                  style={{ 
+                    fontSize: '20px', 
+                    margin: 0, 
+                    color: (!isAdmin && !isPaid) ? 'var(--primary)' : 'var(--text-main)', 
+                    width: '80px',
+                    cursor: (!isAdmin && !isPaid) ? 'pointer' : 'default',
+                    textDecoration: (!isAdmin && !isPaid) ? 'underline' : 'none'
+                  }}
+                  onClick={() => {
+                    if (!isAdmin && !isPaid) {
+                      handleUploadClick(house.id);
+                    }
+                  }}
+                  title={(!isAdmin && !isPaid) ? "Click to upload payment screenshot" : ""}
+                >
+                  {house.house_number}
+                </h3>
                 <span className={`badge ${isPaid ? 'badge-success' : isPendingApproval ? 'badge-warning' : 'badge-danger'}`} style={{ backgroundColor: isPendingApproval ? 'rgba(245, 158, 11, 0.1)' : undefined, color: isPendingApproval ? '#f59e0b' : undefined, whiteSpace: 'nowrap' }}>
                   {isPaid ? 'Paid' : isPendingApproval ? 'Under Review' : 'Due'}
                 </span>
