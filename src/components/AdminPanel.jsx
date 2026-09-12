@@ -527,26 +527,33 @@ export default function AdminPanel({ adminEmail }) {
             )}
             
             {galleryImages.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
-                {galleryImages.map((img, idx) => (
-                  <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
-                    <img src={img.url} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button 
-                      onClick={() => handleDeleteGalleryImage(img.url)}
-                      style={{ 
-                        position: 'absolute', top: '4px', right: '4px', 
-                        background: 'rgba(239, 68, 68, 0.9)', color: 'white', 
-                        border: 'none', borderRadius: '50%', width: '24px', height: '24px', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                        cursor: 'pointer', fontSize: '12px' 
-                      }}
-                      title="Delete Image"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <>
+                {galleryImages.length > 2 && (
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    Showing the 2 most recently added images (out of {galleryImages.length} total).
+                  </p>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                  {galleryImages.slice(0, 2).map((img, idx) => (
+                    <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
+                      <img src={img.url} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button 
+                        onClick={() => handleDeleteGalleryImage(img.url)}
+                        style={{ 
+                          position: 'absolute', top: '4px', right: '4px', 
+                          background: 'rgba(239, 68, 68, 0.9)', color: 'white', 
+                          border: 'none', borderRadius: '50%', width: '24px', height: '24px', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                          cursor: 'pointer', fontSize: '12px' 
+                        }}
+                        title="Delete Image"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
           
