@@ -13,6 +13,8 @@ export default function AdminPanel() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const qrInputRef = useRef(null);
   const [qrStatus, setQrStatus] = useState('');
+  const bannerInputRef = useRef(null);
+  const [bannerStatus, setBannerStatus] = useState('');
   const [complaintEmails, setComplaintEmails] = useState('');
   const [emailStatus, setEmailStatus] = useState('');
 
@@ -119,6 +121,37 @@ export default function AdminPanel() {
       setQrStatus('Error: ' + err.message);
     } finally {
       if (qrInputRef.current) qrInputRef.current.value = '';
+    }
+  };
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setBannerStatus('Uploading...');
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `banner_${Math.random()}.${fileExt}`;
+      const filePath = `settings/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('evidences')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('evidences')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('settings')
+        .upsert({ id: 'banner_image', value: urlData.publicUrl });
+      if (dbError) throw dbError;
+
+      setBannerStatus('Banner Image Updated!');
+    } catch (err) {
+      setBannerStatus('Error: ' + err.message);
+    } finally {
+      if (bannerInputRef.current) bannerInputRef.current.value = '';
     }
   };
 
@@ -249,6 +282,37 @@ export default function AdminPanel() {
             {qrStatus && (
               <div style={{ marginTop: '16px', fontSize: '14px', color: qrStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>
                 {qrStatus}
+              </div>
+            )}
+          </div>
+          
+          {/* Banner Upload Section */}
+          <div className="glass card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <ImageIcon color="var(--primary)" />
+              <h2 style={{ margin: 0, fontSize: '20px' }}>Home Page Banner</h2>
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Upload a hero image to display at the top of the home page directory.</p>
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              ref={bannerInputRef}
+              onChange={handleBannerUpload}
+            />
+            
+            <button 
+              className="btn btn-outline" 
+              style={{ width: '100%', justifyContent: 'center' }} 
+              onClick={() => bannerInputRef.current.click()}
+            >
+              <Upload size={16} /> Upload Banner Image
+            </button>
+            
+            {bannerStatus && (
+              <div style={{ marginTop: '16px', fontSize: '14px', color: bannerStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>
+                {bannerStatus}
               </div>
             )}
           </div>
