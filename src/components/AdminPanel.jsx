@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload } from 'lucide-react';
+import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload, Mail } from 'lucide-react';
 
 export default function AdminPanel() {
   const [formData, setFormData] = useState({
@@ -13,10 +13,29 @@ export default function AdminPanel() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const qrInputRef = useRef(null);
   const [qrStatus, setQrStatus] = useState('');
+  const [complaintEmails, setComplaintEmails] = useState('');
+  const [emailStatus, setEmailStatus] = useState('');
 
   useEffect(() => {
     fetchPendingApprovals();
+    fetchComplaintEmails();
   }, []);
+
+  async function fetchComplaintEmails() {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('id', 'complaint_emails')
+        .single();
+      
+      if (!error && data) {
+        setComplaintEmails(data.value);
+      }
+    } catch (err) {
+      console.warn('Could not fetch complaint emails:', err);
+    }
+  }
 
   async function fetchPendingApprovals() {
     try {
@@ -100,6 +119,20 @@ export default function AdminPanel() {
       setQrStatus('Error: ' + err.message);
     } finally {
       if (qrInputRef.current) qrInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveEmails = async (e) => {
+    e.preventDefault();
+    setEmailStatus('Saving...');
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ id: 'complaint_emails', value: complaintEmails });
+      if (error) throw error;
+      setEmailStatus('Emails updated successfully!');
+    } catch (err) {
+      setEmailStatus('Error: ' + err.message);
     }
   };
 
@@ -218,6 +251,38 @@ export default function AdminPanel() {
                 {qrStatus}
               </div>
             )}
+          </div>
+          
+          {/* Complaint Emails Section */}
+          <div className="glass card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <Mail color="var(--primary)" />
+              <h2 style={{ margin: 0, fontSize: '20px' }}>Complaint Emails</h2>
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Configure where resident complaints should be sent. Separate multiple emails with commas.</p>
+            
+            <form onSubmit={handleSaveEmails}>
+              <div className="form-group">
+                <label>Email Addresses</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={complaintEmails} 
+                  onChange={(e) => setComplaintEmails(e.target.value)} 
+                  placeholder="e.g. admin1@example.com, admin2@example.com" 
+                />
+              </div>
+              
+              {emailStatus && (
+                <div style={{ padding: '12px', marginBottom: '16px', borderRadius: '8px', background: emailStatus.includes('Error') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: emailStatus.includes('Error') ? 'var(--danger)' : 'var(--success)', fontSize: '14px' }}>
+                  {emailStatus}
+                </div>
+              )}
+              
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <Save size={18} /> Save Emails
+              </button>
+            </form>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { IndianRupee, User, AlertCircle, CheckCircle2, Upload, FileImage, Loader2, Trash2, QrCode, Pencil, Save } from 'lucide-react';
+import { IndianRupee, User, AlertCircle, CheckCircle2, Upload, FileImage, Loader2, Trash2, QrCode, Pencil, Save, Mail, MessageSquare } from 'lucide-react';
 
 export default function HouseList({ isAdmin }) {
   const [houses, setHouses] = useState([]);
@@ -15,6 +15,11 @@ export default function HouseList({ isAdmin }) {
   const [editFormData, setEditFormData] = useState({});
   const [editStatus, setEditStatus] = useState('');
 
+  // Complaint State
+  const [complaintEmails, setComplaintEmails] = useState('');
+  const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+  const [complaintForm, setComplaintForm] = useState({ name: '', houseNumber: '', subject: '', description: '' });
+
   const mockHouses = [
     { id: 1, house_number: 'A-101', resident_name: 'John Doe', contact: '+91 9876543210', maintenance_due: 1500, payment_evidence_url: null },
     { id: 2, house_number: 'A-102', resident_name: 'Jane Smith', contact: '+91 9876543211', maintenance_due: 0, payment_evidence_url: null },
@@ -24,7 +29,7 @@ export default function HouseList({ isAdmin }) {
 
   useEffect(() => {
     fetchHouses();
-    fetchQRCode();
+    fetchSettings();
   }, []);
 
   async function fetchHouses() {
@@ -64,19 +69,21 @@ export default function HouseList({ isAdmin }) {
     }
   }
 
-  async function fetchQRCode() {
+  async function fetchSettings() {
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('value')
-        .eq('id', 'payment_qr')
-        .single();
+        .select('id, value');
       
       if (!error && data) {
-        setQrCodeUrl(data.value);
+        const qrSetting = data.find(s => s.id === 'payment_qr');
+        const emailSetting = data.find(s => s.id === 'complaint_emails');
+        
+        if (qrSetting) setQrCodeUrl(qrSetting.value);
+        if (emailSetting) setComplaintEmails(emailSetting.value);
       }
     } catch (err) {
-      console.warn('Could not fetch QR code settings:', err);
+      console.warn('Could not fetch settings:', err);
     }
   }
 
@@ -176,6 +183,26 @@ export default function HouseList({ isAdmin }) {
     }
   };
 
+  const handleComplaintSubmit = (e) => {
+    e.preventDefault();
+    if (!complaintEmails) {
+      alert('Admin has not configured any complaint email addresses yet.');
+      return;
+    }
+    
+    const subject = encodeURIComponent(`Complaint [${complaintForm.houseNumber}]: ${complaintForm.subject}`);
+    const body = encodeURIComponent(
+      `Resident Name: ${complaintForm.name}\n` +
+      `House Number: ${complaintForm.houseNumber}\n\n` +
+      `Complaint Description:\n${complaintForm.description}`
+    );
+    
+    // Trigger mailto link to open default email client
+    window.location.href = `mailto:${complaintEmails}?subject=${subject}&body=${body}`;
+    setIsComplaintOpen(false);
+    setComplaintForm({ name: '', houseNumber: '', subject: '', description: '' });
+  };
+
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><Loader2 className="animate-spin" /></div>;
   }
@@ -197,7 +224,18 @@ export default function HouseList({ isAdmin }) {
           <p>View all houses and their maintenance status.</p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div 
+            className="glass" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px', cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid var(--danger)', color: 'var(--danger)' }}
+            onClick={() => setIsComplaintOpen(true)}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <MessageSquare size={18} />
+            <span style={{ fontWeight: 600, fontSize: '14px' }}>Raise Complaint</span>
+          </div>
+
           {qrCodeUrl && (
             <div 
               className="glass" 
@@ -206,7 +244,7 @@ export default function HouseList({ isAdmin }) {
               onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              <QrCode size={20} />
+              <QrCode size={18} />
               <span style={{ fontWeight: 600, fontSize: '14px' }}>Pay Dues</span>
             </div>
           )}
@@ -397,6 +435,91 @@ export default function HouseList({ isAdmin }) {
               <br/><br/>
               <strong>After paying, don't forget to take a screenshot and upload it!</strong>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Complaint Modal Popup */}
+      {isComplaintOpen && (
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999 }} 
+          onClick={() => setIsComplaintOpen(false)}
+        >
+          <div 
+            className="card glass" 
+            style={{ 
+              background: 'white', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              padding: '32px', maxWidth: '500px', width: '90%', boxShadow: 'var(--shadow-glass)',
+              maxHeight: '90vh', overflowY: 'auto'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px', color: 'var(--text-muted)' }} 
+              onClick={() => setIsComplaintOpen(false)}
+            >
+              ✕
+            </button>
+            <h2 style={{ marginTop: 0, marginBottom: '24px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={24} /> Raise a Complaint
+            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+              Submit your concern directly to the admin committee. Your default email app will open to send this message securely.
+            </p>
+            
+            <form onSubmit={handleComplaintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Your Name</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={complaintForm.name} 
+                    onChange={e => setComplaintForm({...complaintForm, name: e.target.value})} 
+                    required 
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>House Number</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={complaintForm.houseNumber} 
+                    onChange={e => setComplaintForm({...complaintForm, houseNumber: e.target.value})} 
+                    placeholder="e.g. 221-G"
+                    required 
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Complaint Subject</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={complaintForm.subject} 
+                  onChange={e => setComplaintForm({...complaintForm, subject: e.target.value})} 
+                  placeholder="e.g. Broken streetlight near block A"
+                  required 
+                />
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Description</label>
+                <textarea 
+                  className="form-control" 
+                  value={complaintForm.description} 
+                  onChange={e => setComplaintForm({...complaintForm, description: e.target.value})} 
+                  placeholder="Provide detailed information about the issue..."
+                  rows={4}
+                  required 
+                />
+              </div>
+              
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px', justifyContent: 'center', background: 'var(--danger)' }}>
+                <Mail size={16} /> Prepare Email to Admin
+              </button>
+            </form>
           </div>
         </div>
       )}
