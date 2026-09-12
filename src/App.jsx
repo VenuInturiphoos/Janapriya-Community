@@ -41,26 +41,32 @@ function App() {
 
   return (
     <Router>
-      <div 
-        className="app-container"
-        style={bannerImageUrl ? {
-          backgroundImage: `linear-gradient(rgba(240, 244, 248, 0.7), rgba(240, 244, 248, 0.7)), url(${bannerImageUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: `center ${bannerPositionY}%`,
-          backgroundAttachment: 'fixed',
-          minHeight: '100vh'
-        } : {}}
-      >
+      <div className="app-container">
         <Sidebar isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
-        <main className="main-content glass card">
-          <Routes>
-            <Route path="/" element={<Navigate to="/houses" />} />
-            <Route path="/houses" element={<HouseList isAdmin={isAdmin} />} />
-            <Route 
-              path="/admin" 
-              element={isAdmin ? <AdminPanel /> : <Navigate to="/houses" />} 
-            />
-          </Routes>
+        <main className="main-content glass card" style={{ display: 'flex', flexDirection: 'column' }}>
+          {bannerImageUrl && (
+            <div style={{
+              width: '100%',
+              height: '200px',
+              borderRadius: '12px',
+              marginBottom: '24px',
+              backgroundImage: `url(${bannerImageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: `center ${bannerPositionY}%`,
+              boxShadow: 'var(--shadow-glass)',
+              flexShrink: 0
+            }} />
+          )}
+          <div style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/houses" />} />
+              <Route path="/houses" element={<HouseList isAdmin={isAdmin} />} />
+              <Route 
+                path="/admin" 
+                element={isAdmin ? <AdminPanel /> : <Navigate to="/houses" />} 
+              />
+            </Routes>
+          </div>
         </main>
       </div>
     </Router>
