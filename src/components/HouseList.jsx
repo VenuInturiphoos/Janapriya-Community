@@ -39,13 +39,18 @@ export default function HouseList({ isAdmin }) {
         console.warn('Supabase fetch returned no data or failed, using mock data for preview.');
         setHouses(mockHouses);
       } else {
-        // Sort by house number (numeric part), then G before F
+        // Sort dynamically handling both G-221 and 221-G formats
         const sortedData = data.sort((a, b) => {
-          const numA = parseInt(a.house_number.split('-')[1] || 0);
-          const numB = parseInt(b.house_number.split('-')[1] || 0);
+          const numA = parseInt(a.house_number.replace(/\D/g, '') || 0);
+          const numB = parseInt(b.house_number.replace(/\D/g, '') || 0);
+          
           if (numA === numB) {
-            // Sort G before F (descending alphabetical order of the prefix)
-            return b.house_number.localeCompare(a.house_number);
+            // Sort G before F regardless of format
+            const isAG = a.house_number.toUpperCase().includes('G');
+            const isBG = b.house_number.toUpperCase().includes('G');
+            if (isAG && !isBG) return -1;
+            if (!isAG && isBG) return 1;
+            return a.house_number.localeCompare(b.house_number);
           }
           return numA - numB;
         });
@@ -213,7 +218,7 @@ export default function HouseList({ isAdmin }) {
         </div>
       </div>
 
-      <div className="house-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
+      <div className="house-grid">
         {houses.map(house => {
           const isPaid = house.maintenance_due <= 0;
           const isPendingApproval = !isPaid && house.payment_evidence_url;

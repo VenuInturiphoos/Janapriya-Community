@@ -211,3 +211,9 @@ p {
   border-color: var(--primary);
   background: white;
 }
+
+.house-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
