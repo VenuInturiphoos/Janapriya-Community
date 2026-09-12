@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload, Mail, UserPlus } from 'lucide-react';
+import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload, Mail, UserPlus, ClipboardList, Clock } from 'lucide-react';
 
-export default function AdminPanel() {
+export default function AdminPanel({ adminEmail }) {
   const [formData, setFormData] = useState({
     house_number: '',
     resident_name: '',
@@ -26,12 +26,43 @@ export default function AdminPanel() {
   const [adminList, setAdminList] = useState([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [adminStatus, setAdminStatus] = useState('');
+  const [auditLogs, setAuditLogs] = useState([]);
 
   useEffect(() => {
     fetchPendingApprovals();
     fetchSettings();
     fetchAdmins();
+    fetchLogs();
   }, []);
+
+  async function fetchLogs() {
+    try {
+      const { data, error } = await supabase
+        .from('admin_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (!error && data) {
+        setAuditLogs(data);
+      }
+    } catch (err) {
+      console.warn('Could not fetch logs:', err);
+    }
+  }
+
+  async function logAction(action, details = '') {
+    if (!adminEmail) return;
+    try {
+      await supabase.from('admin_logs').insert([{
+        admin_email: adminEmail,
+        action,
+        details
+      }]);
+      fetchLogs();
+    } catch (err) {
+      console.warn('Failed to log action:', err);
+    }
+  }
 
   async function fetchAdmins() {
     try {
@@ -100,6 +131,7 @@ export default function AdminPanel() {
         
       if (error) throw error;
       
+      logAction('Add House', `Added house ${formData.house_number} for ${formData.resident_name}`);
       setStatus('House added successfully!');
       setFormData({ house_number: '', resident_name: '', contact: '', maintenance_due: 0 });
     } catch (err) {
@@ -116,6 +148,7 @@ export default function AdminPanel() {
         .eq('id', houseId);
         
       if (error) throw error;
+      logAction('Approve Payment', `Approved payment for house ID ${houseId}`);
       alert('Payment approved and dues cleared!');
       fetchPendingApprovals();
     } catch (err) {
@@ -146,6 +179,7 @@ export default function AdminPanel() {
         .upsert({ id: 'payment_qr', value: urlData.publicUrl });
       if (dbError) throw dbError;
 
+      logAction('Update QR Code', 'Uploaded a new payment QR code');
       setQrStatus('QR Code Updated!');
     } catch (err) {
       setQrStatus('Error: ' + err.message);
@@ -177,6 +211,7 @@ export default function AdminPanel() {
         .upsert({ id: 'banner_image', value: urlData.publicUrl });
       if (dbError) throw dbError;
 
+      logAction('Update Banner', 'Uploaded a new home page banner image');
       setBannerStatus('Banner Image Updated!');
     } catch (err) {
       setBannerStatus('Error: ' + err.message);
@@ -192,6 +227,7 @@ export default function AdminPanel() {
         .from('settings')
         .upsert({ id: 'banner_position_y', value: bannerPosition.toString() });
       if (error) throw error;
+      logAction('Update Banner Position', `Changed banner vertical position to ${bannerPosition}%`);
       setBannerStatus('Banner position saved!');
     } catch (err) {
       setBannerStatus('Error: ' + err.message);
@@ -206,6 +242,7 @@ export default function AdminPanel() {
         .from('settings')
         .upsert({ id: 'complaint_emails', value: complaintEmails });
       if (error) throw error;
+      logAction('Update Complaint Emails', `Set complaint emails to ${complaintEmails}`);
       setEmailStatus('Emails updated successfully!');
     } catch (err) {
       setEmailStatus('Error: ' + err.message);
@@ -238,6 +275,7 @@ export default function AdminPanel() {
       if (dbError) throw dbError;
 
       setGalleryImages(newImages);
+      logAction('Add Gallery Image', 'Uploaded a new community image');
       setGalleryStatus('Image added to gallery!');
     } catch (err) {
       setGalleryStatus('Error: ' + err.message);
@@ -255,6 +293,7 @@ export default function AdminPanel() {
         .upsert({ id: 'community_images', value: JSON.stringify(newImages) });
       if (error) throw error;
       setGalleryImages(newImages);
+      logAction('Delete Gallery Image', 'Deleted an image from the community gallery');
     } catch (err) {
       alert('Error deleting image: ' + err.message);
     }
@@ -267,6 +306,7 @@ export default function AdminPanel() {
     try {
       const { error } = await supabase.from('admins').insert([{ email: newAdminEmail }]);
       if (error) throw error;
+      logAction('Add Admin', `Added ${newAdminEmail} to the admin list`);
       setAdminStatus('Admin added successfully!');
       setNewAdminEmail('');
       fetchAdmins();
@@ -280,6 +320,7 @@ export default function AdminPanel() {
     try {
       const { error } = await supabase.from('admins').delete().eq('id', id);
       if (error) throw error;
+      logAction('Remove Admin', `Removed admin ID ${id}`);
       fetchAdmins();
     } catch (err) {
       alert('Error removing admin: ' + err.message);
@@ -584,6 +625,41 @@ export default function AdminPanel() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Audit Logs Section */}
+        <div className="glass card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+            <ClipboardList color="var(--primary)" />
+            <h2 style={{ margin: 0, fontSize: '20px' }}>Audit Logs</h2>
+          </div>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Showing the last 500 actions performed by administrators.</p>
+          
+          <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {auditLogs.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>No logs recorded yet.</p>
+            ) : (
+              auditLogs.map(log => (
+                <div key={log.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.6)', borderRadius: '8px', border: '1px solid var(--border-glass)', fontSize: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <strong style={{ color: 'var(--text-main)' }}>{log.action}</strong>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      <Clock size={12} />
+                      {new Date(log.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    By: <span style={{ color: 'var(--primary)', fontWeight: 500 }}>{log.admin_email}</span>
+                  </div>
+                  {log.details && (
+                    <div style={{ color: 'var(--text-main)', fontStyle: 'italic', fontSize: '13px', background: 'rgba(0,0,0,0.03)', padding: '6px', borderRadius: '4px' }}>
+                      "{log.details}"
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
 

@@ -170,7 +170,7 @@ function App() {
               <Route path="/gallery" element={<CommunityGallery />} />
               <Route 
                 path="/admin" 
-                element={isAdmin ? <AdminPanel /> : <Navigate to="/houses" />} 
+                element={isAdmin ? <AdminPanel adminEmail={session?.user?.email} /> : <Navigate to="/houses" />} 
               />
             </Routes>
           </main>
