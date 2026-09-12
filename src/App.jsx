@@ -40,16 +40,20 @@ function App() {
   }, []);
 
   return (
-    <div style={bannerImageUrl ? {
-      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url(${bannerImageUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: `center ${bannerPositionY}%`,
-      backgroundAttachment: 'fixed',
-      minHeight: '100vh',
-      width: '100%'
-    } : { width: '100%', minHeight: '100vh' }}>
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {bannerImageUrl && (
+        <div style={{
+          width: '100%',
+          height: '250px',
+          backgroundImage: `url(${bannerImageUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: `center ${bannerPositionY}%`,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          flexShrink: 0
+        }} />
+      )}
       <Router>
-        <div className="app-container">
+        <div className="app-container" style={{ marginTop: bannerImageUrl ? '24px' : '0' }}>
           <Sidebar isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
           <main className="main-content glass card">
             <Routes>
