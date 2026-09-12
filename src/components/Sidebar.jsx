@@ -25,24 +25,6 @@ export default function Sidebar({ isAdmin, setIsAdmin }) {
         )}
       </nav>
 
-      <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid var(--border-glass)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <UserCircle size={36} color="var(--primary)" />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '14px' }}>{isAdmin ? 'Admin User' : 'Resident'}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Read {isAdmin ? '& Write' : 'Only'} Access</div>
-          </div>
-        </div>
-        
-        <button 
-          className={`btn ${isAdmin ? 'btn-outline' : 'btn-primary'}`} 
-          style={{ width: '100%', justifyContent: 'center' }}
-          onClick={() => setIsAdmin(!isAdmin)}
-        >
-          {isAdmin ? <LogOut size={16} /> : <LogIn size={16} />}
-          {isAdmin ? 'Logout Admin' : 'Login as Admin'}
-        </button>
-      </div>
     </div>
   );
 }

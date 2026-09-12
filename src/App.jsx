@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { UserCircle, LogOut, LogIn } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HouseList from './components/HouseList';
 import AdminPanel from './components/AdminPanel';
@@ -40,7 +41,37 @@ function App() {
   }, []);
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Top Right User Details Widget */}
+      <div className="glass" style={{
+        position: 'absolute',
+        top: '24px',
+        right: '24px',
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '12px 24px',
+        borderRadius: '100px',
+        boxShadow: 'var(--shadow-glass)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <UserCircle size={28} color="var(--primary)" />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.2' }}>{isAdmin ? 'Admin User' : 'Resident'}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Read {isAdmin ? '& Write' : 'Only'}</span>
+          </div>
+        </div>
+        <button 
+          className={`btn ${isAdmin ? 'btn-outline' : 'btn-primary'}`} 
+          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '100px' }}
+          onClick={() => setIsAdmin(!isAdmin)}
+        >
+          {isAdmin ? <LogOut size={14} /> : <LogIn size={14} />}
+          {isAdmin ? 'Logout' : 'Login'}
+        </button>
+      </div>
+
       {bannerImageUrl && (
         <div style={{
           width: '100%',
