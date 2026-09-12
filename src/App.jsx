@@ -43,8 +43,12 @@ function App() {
       const { data, error } = await supabase
         .from('admins')
         .select('*')
-        .eq('email', currentSession.user.email)
-        .single();
+        .ilike('email', currentSession.user.email)
+        .maybeSingle();
+        
+      if (error) {
+        console.warn('Admin check error:', error);
+      }
         
       if (data) {
         setIsAdmin(true);
@@ -52,6 +56,7 @@ function App() {
         setIsAdmin(false);
       }
     } catch (err) {
+      console.warn('Admin check catch:', err);
       // either table doesn't exist or user not admin
       setIsAdmin(false);
     } finally {
