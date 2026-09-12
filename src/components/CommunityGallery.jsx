@@ -147,8 +147,8 @@ export default function CommunityGallery() {
             src={selectedImage} 
             alt="Expanded view" 
             style={{
-              maxHeight: '100%',
-              maxWidth: '100%',
+              maxHeight: '90vh',
+              maxWidth: '90vw',
               objectFit: 'contain',
               borderRadius: '8px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
