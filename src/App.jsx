@@ -1,24 +1,67 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { UserCircle, LogOut, LogIn } from 'lucide-react';
+import { UserCircle, LogOut, LogIn, Loader2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import HouseList from './components/HouseList';
 import AdminPanel from './components/AdminPanel';
 import CommunityGallery from './components/CommunityGallery';
+import Login from './components/Login';
 import { supabase } from './supabaseClient';
 import './index.css';
 
 function App() {
-  // Simple auth simulation as per user request: "normal user and admin user are for now"
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return localStorage.getItem('isAdmin') === 'true';
-  });
+  const [session, setSession] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingSession, setLoadingSession] = useState(true);
   const [bannerImageUrl, setBannerImageUrl] = useState(null);
   const [bannerPositionY, setBannerPositionY] = useState(50);
 
   useEffect(() => {
-    localStorage.setItem('isAdmin', isAdmin);
-  }, [isAdmin]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      checkAdminStatus(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      checkAdminStatus(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function checkAdminStatus(currentSession) {
+    if (!currentSession?.user?.email) {
+      setIsAdmin(false);
+      setLoadingSession(false);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', currentSession.user.email)
+        .single();
+        
+      if (data) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (err) {
+      // either table doesn't exist or user not admin
+      setIsAdmin(false);
+    } finally {
+      setLoadingSession(false);
+    }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   useEffect(() => {
     async function fetchBanner() {
@@ -41,6 +84,18 @@ function App() {
     fetchBanner();
   }, []);
 
+  if (loadingSession) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
   return (
     <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Top Right User Details Widget */}
@@ -59,17 +114,19 @@ function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <UserCircle size={28} color="var(--primary)" />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.2' }}>{isAdmin ? 'Admin User' : 'Resident'}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Read {isAdmin ? '& Write' : 'Only'}</span>
+            <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.2' }}>{session.user.email}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              {isAdmin ? 'Admin Access' : 'Resident Access'}
+            </span>
           </div>
         </div>
         <button 
-          className={`btn ${isAdmin ? 'btn-outline' : 'btn-primary'}`} 
-          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '100px' }}
-          onClick={() => setIsAdmin(!isAdmin)}
+          className="btn btn-outline" 
+          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '100px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+          onClick={handleLogout}
         >
-          {isAdmin ? <LogOut size={14} /> : <LogIn size={14} />}
-          {isAdmin ? 'Logout' : 'Login'}
+          <LogOut size={14} />
+          Logout
         </button>
       </div>
 
