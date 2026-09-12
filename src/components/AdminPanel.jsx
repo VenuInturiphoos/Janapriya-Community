@@ -15,27 +15,30 @@ export default function AdminPanel() {
   const [qrStatus, setQrStatus] = useState('');
   const bannerInputRef = useRef(null);
   const [bannerStatus, setBannerStatus] = useState('');
+  const [bannerPosition, setBannerPosition] = useState(50);
   const [complaintEmails, setComplaintEmails] = useState('');
   const [emailStatus, setEmailStatus] = useState('');
 
   useEffect(() => {
     fetchPendingApprovals();
-    fetchComplaintEmails();
+    fetchSettings();
   }, []);
 
-  async function fetchComplaintEmails() {
+  async function fetchSettings() {
     try {
       const { data, error } = await supabase
         .from('settings')
-        .select('value')
-        .eq('id', 'complaint_emails')
-        .single();
+        .select('id, value')
+        .in('id', ['complaint_emails', 'banner_position_y']);
       
       if (!error && data) {
-        setComplaintEmails(data.value);
+        const emailSetting = data.find(s => s.id === 'complaint_emails');
+        const posSetting = data.find(s => s.id === 'banner_position_y');
+        if (emailSetting) setComplaintEmails(emailSetting.value);
+        if (posSetting) setBannerPosition(parseInt(posSetting.value) || 50);
       }
     } catch (err) {
-      console.warn('Could not fetch complaint emails:', err);
+      console.warn('Could not fetch settings:', err);
     }
   }
 
@@ -152,6 +155,19 @@ export default function AdminPanel() {
       setBannerStatus('Error: ' + err.message);
     } finally {
       if (bannerInputRef.current) bannerInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveBannerPosition = async () => {
+    setBannerStatus('Saving position...');
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ id: 'banner_position_y', value: bannerPosition.toString() });
+      if (error) throw error;
+      setBannerStatus('Banner position saved!');
+    } catch (err) {
+      setBannerStatus('Error: ' + err.message);
     }
   };
 
@@ -304,11 +320,32 @@ export default function AdminPanel() {
             
             <button 
               className="btn btn-outline" 
-              style={{ width: '100%', justifyContent: 'center' }} 
+              style={{ width: '100%', justifyContent: 'center', marginBottom: '16px' }} 
               onClick={() => bannerInputRef.current.click()}
             >
-              <Upload size={16} /> Upload Banner Image
+              <Upload size={16} /> Upload New Banner
             </button>
+            
+            <div style={{ marginTop: '16px', background: 'rgba(0,0,0,0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <label style={{ fontSize: '14px', fontWeight: 500 }}>Vertical Position Offset</label>
+                <span style={{ fontSize: '14px', color: 'var(--primary)' }}>{bannerPosition}%</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" max="100" 
+                value={bannerPosition}
+                onChange={(e) => setBannerPosition(e.target.value)}
+                style={{ width: '100%', marginBottom: '12px', cursor: 'pointer' }}
+              />
+              <button 
+                className="btn btn-primary" 
+                style={{ width: '100%', justifyContent: 'center', padding: '6px 12px', fontSize: '14px' }}
+                onClick={handleSaveBannerPosition}
+              >
+                Save Position
+              </button>
+            </div>
             
             {bannerStatus && (
               <div style={{ marginTop: '16px', fontSize: '14px', color: bannerStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>

@@ -8,6 +8,7 @@ export default function HouseList({ isAdmin }) {
   const [uploadingId, setUploadingId] = useState(null);
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
   const [bannerImageUrl, setBannerImageUrl] = useState(null);
+  const [bannerPositionY, setBannerPositionY] = useState(50);
   const [isQRPopupOpen, setIsQRPopupOpen] = useState(false);
   const fileInputRef = useRef(null);
   
@@ -80,10 +81,12 @@ export default function HouseList({ isAdmin }) {
         const qrSetting = data.find(s => s.id === 'payment_qr');
         const emailSetting = data.find(s => s.id === 'complaint_emails');
         const bannerSetting = data.find(s => s.id === 'banner_image');
+        const posSetting = data.find(s => s.id === 'banner_position_y');
         
         if (qrSetting) setQrCodeUrl(qrSetting.value);
         if (emailSetting) setComplaintEmails(emailSetting.value);
         if (bannerSetting) setBannerImageUrl(bannerSetting.value);
+        if (posSetting) setBannerPositionY(parseInt(posSetting.value) || 50);
       }
     } catch (err) {
       console.warn('Could not fetch settings:', err);
@@ -229,7 +232,7 @@ export default function HouseList({ isAdmin }) {
           marginBottom: '24px',
           backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${bannerImageUrl})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: `center ${bannerPositionY}%`,
           display: 'flex',
           alignItems: 'flex-end',
           padding: '24px',
