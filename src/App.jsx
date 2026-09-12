@@ -13,6 +13,8 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('isAdmin', isAdmin);
+  }, [isAdmin]);
+
   return (
     <Router>
       <div className="app-container">
