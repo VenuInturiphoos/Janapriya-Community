@@ -39,7 +39,17 @@ export default function HouseList({ isAdmin }) {
         console.warn('Supabase fetch returned no data or failed, using mock data for preview.');
         setHouses(mockHouses);
       } else {
-        setHouses(data);
+        // Sort by house number (numeric part), then G before F
+        const sortedData = data.sort((a, b) => {
+          const numA = parseInt(a.house_number.split('-')[1] || 0);
+          const numB = parseInt(b.house_number.split('-')[1] || 0);
+          if (numA === numB) {
+            // Sort G before F (descending alphabetical order of the prefix)
+            return b.house_number.localeCompare(a.house_number);
+          }
+          return numA - numB;
+        });
+        setHouses(sortedData);
       }
     } catch (err) {
       console.warn('Error fetching houses:', err);
@@ -203,7 +213,7 @@ export default function HouseList({ isAdmin }) {
         </div>
       </div>
 
-      <div className="house-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="house-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
         {houses.map(house => {
           const isPaid = house.maintenance_due <= 0;
           const isPendingApproval = !isPaid && house.payment_evidence_url;
