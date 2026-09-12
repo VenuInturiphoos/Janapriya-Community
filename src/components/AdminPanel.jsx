@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload, Mail } from 'lucide-react';
+import { PlusCircle, Save, CheckSquare, Image as ImageIcon, IndianRupee, QrCode, Upload, Mail, UserPlus } from 'lucide-react';
 
 export default function AdminPanel() {
   const [formData, setFormData] = useState({
@@ -23,10 +23,26 @@ export default function AdminPanel() {
   const [galleryStatus, setGalleryStatus] = useState('');
   const galleryInputRef = useRef(null);
 
+  const [adminList, setAdminList] = useState([]);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [adminStatus, setAdminStatus] = useState('');
+
   useEffect(() => {
     fetchPendingApprovals();
     fetchSettings();
+    fetchAdmins();
   }, []);
+
+  async function fetchAdmins() {
+    try {
+      const { data, error } = await supabase.from('admins').select('*');
+      if (!error && data) {
+        setAdminList(data);
+      }
+    } catch (err) {
+      console.warn('Could not fetch admins:', err);
+    }
+  }
 
   async function fetchSettings() {
     try {
@@ -241,6 +257,32 @@ export default function AdminPanel() {
       setGalleryImages(newImages);
     } catch (err) {
       alert('Error deleting image: ' + err.message);
+    }
+  };
+
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    if (!newAdminEmail) return;
+    setAdminStatus('Adding...');
+    try {
+      const { error } = await supabase.from('admins').insert([{ email: newAdminEmail }]);
+      if (error) throw error;
+      setAdminStatus('Admin added successfully!');
+      setNewAdminEmail('');
+      fetchAdmins();
+    } catch (err) {
+      setAdminStatus('Error: ' + err.message);
+    }
+  };
+
+  const handleRemoveAdmin = async (id) => {
+    if (!window.confirm('Remove this admin?')) return;
+    try {
+      const { error } = await supabase.from('admins').delete().eq('id', id);
+      if (error) throw error;
+      fetchAdmins();
+    } catch (err) {
+      alert('Error removing admin: ' + err.message);
     }
   };
 
@@ -497,6 +539,51 @@ export default function AdminPanel() {
                 <Save size={18} /> Save Emails
               </button>
             </form>
+          </div>
+
+          {/* Manage Admins Section */}
+          <div className="glass card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+              <UserPlus color="var(--primary)" />
+              <h2 style={{ margin: 0, fontSize: '20px' }}>Manage Admins</h2>
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Add or remove administrators who can access this panel.</p>
+            
+            <form onSubmit={handleAddAdmin} style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="email" 
+                  className="form-control" 
+                  value={newAdminEmail} 
+                  onChange={(e) => setNewAdminEmail(e.target.value)} 
+                  placeholder="New admin email" 
+                  required
+                />
+                <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                  <PlusCircle size={16} /> Add
+                </button>
+              </div>
+              {adminStatus && (
+                <div style={{ marginTop: '8px', fontSize: '14px', color: adminStatus.includes('Error') ? 'var(--danger)' : 'var(--success)' }}>
+                  {adminStatus}
+                </div>
+              )}
+            </form>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {adminList.map(admin => (
+                <div key={admin.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.5)', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500 }}>{admin.email}</span>
+                  <button 
+                    onClick={() => handleRemoveAdmin(admin.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                    title="Remove Admin"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
