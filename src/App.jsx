@@ -53,7 +53,11 @@ function App() {
         }} />
       )}
       <Router>
-        <div className="app-container" style={{ marginTop: bannerImageUrl ? '24px' : '0' }}>
+        <div className="app-container" style={{ 
+          marginTop: bannerImageUrl ? '-60px' : '0', 
+          position: 'relative', 
+          zIndex: 10 
+        }}>
           <Sidebar isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
           <main className="main-content glass card">
             <Routes>
