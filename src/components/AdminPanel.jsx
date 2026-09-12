@@ -42,7 +42,11 @@ export default function AdminPanel() {
         
         if (emailSetting) setComplaintEmails(emailSetting.value);
         if (posSetting) setBannerPosition(parseInt(posSetting.value) || 50);
-        if (gallerySetting) setGalleryImages(JSON.parse(gallerySetting.value || '[]'));
+        if (gallerySetting) {
+          const rawImages = JSON.parse(gallerySetting.value || '[]');
+          const normalized = rawImages.map(img => typeof img === 'string' ? { url: img, date: new Date().toISOString() } : img);
+          setGalleryImages(normalized);
+        }
       }
     } catch (err) {
       console.warn('Could not fetch settings:', err);
@@ -210,7 +214,7 @@ export default function AdminPanel() {
         .from('evidences')
         .getPublicUrl(filePath);
 
-      const newImages = [urlData.publicUrl, ...galleryImages];
+      const newImages = [{ url: urlData.publicUrl, date: new Date().toISOString() }, ...galleryImages];
       
       const { error: dbError } = await supabase
         .from('settings')
@@ -229,7 +233,7 @@ export default function AdminPanel() {
   const handleDeleteGalleryImage = async (urlToDelete) => {
     if (!window.confirm('Remove this image from the gallery?')) return;
     try {
-      const newImages = galleryImages.filter(url => url !== urlToDelete);
+      const newImages = galleryImages.filter(img => img.url !== urlToDelete);
       const { error } = await supabase
         .from('settings')
         .upsert({ id: 'community_images', value: JSON.stringify(newImages) });
@@ -441,11 +445,11 @@ export default function AdminPanel() {
             
             {galleryImages.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
-                {galleryImages.map((url, idx) => (
+                {galleryImages.map((img, idx) => (
                   <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
-                    <img src={url} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={img.url} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button 
-                      onClick={() => handleDeleteGalleryImage(url)}
+                      onClick={() => handleDeleteGalleryImage(img.url)}
                       style={{ 
                         position: 'absolute', top: '4px', right: '4px', 
                         background: 'rgba(239, 68, 68, 0.9)', color: 'white', 
