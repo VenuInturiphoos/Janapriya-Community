@@ -643,7 +643,7 @@ export default function AdminPanel({ adminEmail }) {
           </div>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>Showing the last 500 actions performed by administrators.</p>
           
-          <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="custom-scrollbar" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {auditLogs.length === 0 ? (
               <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>No logs recorded yet.</p>
             ) : (
