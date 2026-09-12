@@ -92,10 +92,6 @@ function App() {
     );
   }
 
-  if (!session) {
-    return <Login />;
-  }
-
   return (
     <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Top Right User Details Widget */}
@@ -106,28 +102,41 @@ function App() {
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
-        gap: '16px',
         padding: '12px 24px',
         borderRadius: '100px',
         boxShadow: 'var(--shadow-glass)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <UserCircle size={28} color="var(--primary)" />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.2' }}>{session.user.email}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              {isAdmin ? 'Admin Access' : 'Resident Access'}
-            </span>
+        {session ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <UserCircle size={28} color="var(--primary)" />
+            <div style={{ display: 'flex', flexDirection: 'column', marginRight: '8px' }}>
+              <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.2' }}>{session.user.email}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {isAdmin ? 'Admin Access' : 'Resident Access'}
+              </span>
+            </div>
+            <button 
+              className="btn btn-outline" 
+              style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '100px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+              onClick={handleLogout}
+            >
+              <LogOut size={14} />
+              Logout
+            </button>
           </div>
-        </div>
-        <button 
-          className="btn btn-outline" 
-          style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '100px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-          onClick={handleLogout}
-        >
-          <LogOut size={14} />
-          Logout
-        </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>Welcome, Resident</span>
+            <button 
+              className="btn btn-primary" 
+              style={{ padding: '6px 16px', borderRadius: '100px', fontSize: '14px' }}
+              onClick={() => window.location.hash = '#/login'}
+            >
+              <LogIn size={16} />
+              Login as Admin
+            </button>
+          </div>
+        )}
       </div>
 
       {bannerImageUrl && (
@@ -151,6 +160,7 @@ function App() {
           <main className="main-content glass card">
             <Routes>
               <Route path="/" element={<Navigate to="/houses" />} />
+              <Route path="/login" element={!session ? <Login /> : <Navigate to="/houses" />} />
               <Route path="/houses" element={<HouseList isAdmin={isAdmin} />} />
               <Route path="/gallery" element={<CommunityGallery />} />
               <Route 
